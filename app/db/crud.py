@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, desc, asc, or_
 from .session import SessionLocal
 from .models import Track
 
@@ -13,10 +13,21 @@ def _track_to_dict(t: Track) -> Dict:
         "tempo": t.tempo,
     }
 
-def get_tracks(limit: int = 50, offset: int = 0, q: Optional[str] = None) -> List[Dict]:
-    from sqlalchemy import select
+def get_tracks(
+    limit: int = 50,
+    offset: int = 0,
+    q: Optional[str] = None,
+    artist: Optional[str] = None,
+    min_danceability: Optional[float] = None,
+    tempo_min: Optional[float] = None,
+    tempo_max: Optional[float] = None,
+    sort: Optional[str] = None,      # "danceability" | "tempo" | "track_name"
+    order: str = "desc",             # "asc" | "desc"
+) -> Dict:
     with SessionLocal() as s:
-        stmt = select(Track).offset(offset).limit(limit)
+        stmt = select(Track)
+
+        # filters
         if q:
             pat = f"%{q}%"
             stmt = stmt.where(
@@ -26,8 +37,31 @@ def get_tracks(limit: int = 50, offset: int = 0, q: Optional[str] = None) -> Lis
                     Track.album.ilike(pat),
                 )
             )
-        rows = s.execute(stmt).scalars().all()
-        return [_track_to_dict(t) for t in rows]
+        if artist:
+            stmt = stmt.where(Track.artist.ilike(f"%{artist}%"))
+        if min_danceability is not None:
+            stmt = stmt.where(Track.danceability >= min_danceability)
+        if tempo_min is not None:
+            stmt = stmt.where(Track.tempo >= tempo_min)
+        if tempo_max is not None:
+            stmt = stmt.where(Track.tempo <= tempo_max)
+
+        # total count with same filters
+        total = s.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+
+        # sorting
+        if sort in {"danceability", "tempo", "track_name"}:
+            col = getattr(Track, sort)
+            stmt = stmt.order_by(desc(col) if order == "desc" else asc(col))
+        else:
+            stmt = stmt.order_by(Track.id.asc())
+
+        # page
+        page = s.execute(stmt.offset(offset).limit(limit)).scalars().all()
+        items = [_track_to_dict(t) for t in page]
+
+        next_offset = offset + limit if (offset + limit) < total else None
+        return {"items": items, "total": int(total), "next_offset": next_offset}
 
 def get_top_artists(limit: int = 10) -> List[Dict]:
     with SessionLocal() as s:
