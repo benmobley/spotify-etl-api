@@ -105,7 +105,7 @@ python -m app.etl.load_csv data/raw/spotify_kaggle.csv
 • Swagger UI: http://127.0.0.1:8000/docs
 • Health: http://127.0.0.1:8000/health
 
-🐳 Quickstart (Docker Compose)
+## 🐳 Quickstart (Docker Compose)
 
 Spins up Postgres + API in one command.
 
@@ -123,7 +123,7 @@ python -m app.etl.load_csv data/raw/spotify_kaggle.csv
 Stop & clean:
 docker compose down -v
 
-🔌 Environment Variables
+## 🔌 Environment Variables
 
 Create your .env from .env.example:
 
@@ -135,7 +135,7 @@ DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/spotify
 
 # DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/spotify
 
-🧪 Tests & CI
+## 🧪 Tests & CI
 
 Run tests locally:
 make test
@@ -151,7 +151,7 @@ If you see ModuleNotFoundError: app, add a pytest.ini with:
 [pytest]
 pythonpath = .
 
-🧭 API Endpoints (FastAPI)
+## 🧭 API Endpoints (FastAPI)
 
 Base URL: http://127.0.0.1:8000
 • GET /health → {"ok": true}
@@ -227,7 +227,7 @@ curl "http://127.0.0.1:8000/api/tracks?limit=5&tempo_min=60&tempo_max=90&sort=te
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&offset=5"
 
-🧼 CSV Loader Details
+## 🧼 CSV Loader Details
 
 Path: app/etl/load_csv.py
 • Accepts common Spotify/Kaggle headers, e.g.:
@@ -244,20 +244,22 @@ Load data:
 psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
 python -m app.etl.load_csv data/raw/spotify_kaggle.csv
 
-⚡ Performance (Optional)
+## ⚡ Performance (Optional)
 
 Create indexes for faster queries on large datasets:
 psql -h localhost -U postgres -d spotify -c "CREATE INDEX IF NOT EXISTS tracks_artist_idx ON tracks(artist);"
 psql -h localhost -U postgres -d spotify -c "CREATE INDEX IF NOT EXISTS tracks_name_idx ON tracks(track_name);"
 
-🛠 Makefile Shortcuts
+## 🛠 Makefile Shortcuts
+
 make run # uvicorn app.api.main:app --reload
 make test # pytest -q
 make docker-up # docker compose up --build -d
 make docker-down # docker compose down -v
 make load-sample # load small sample CSV (if present)
 
-🧩 Troubleshooting
+## 🧩 Troubleshooting
+
 • FATAL: role "postgres" does not exist
 Create the role or use existing credentials; update DATABASE_URL accordingly.
 • Connection refused / port in use
@@ -277,7 +279,8 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 
 ⸻
 
-🗺️ Future Enhancements
+## 🗺️ Future Enhancements
+
 • artist_exact=true or word-boundary filter
 • More stats endpoints (tempo histograms, per-genre summaries)
 • Auth (API key / OAuth) and rate limiting
@@ -286,12 +289,13 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 
 ⸻
 
-📄 License
+## 📄 License
 
 MIT — do whatever you want; attribution appreciated.
 
 ⸻
 
-🙌 Credits
+## 🙌 Credits
+
 • Data: Bring your own CSV (e.g., Kaggle Spotify datasets). Respect original dataset licenses.
 • Built with ❤️ using FastAPI, SQLAlchemy, pandas, and Postgres.
