@@ -32,21 +32,21 @@ A tiny but complete data project that proves end-to-end skills:
 
 .
 ├─ app/
-│ ├─ api/
-│ │ ├─ main.py # FastAPI app (CORS, DB init, router)
-│ │ ├─ tracks.py # /api/tracks and /api/stats/\* endpoints
-│ │ └─ schemas.py # Pydantic response models
-│ ├─ db/
-│ │ ├─ crud.py # DB queries + filters/pagination
-│ │ ├─ models.py # SQLAlchemy models (Track)
-│ │ └─ session.py # Engine/Session/Base + DATABASE_URL
-│ └─ etl/
-│ └─ load_csv.py # CSV → normalize → chunk insert into Postgres
+│  ├─ api/
+│  │  ├─ main.py        # FastAPI app (CORS, DB init, router)
+│  │  ├─ tracks.py      # /api/tracks and /api/stats/* endpoints
+│  │  └─ schemas.py     # Pydantic response models
+│  ├─ db/
+│  │  ├─ crud.py        # DB queries + filters/pagination
+│  │  ├─ models.py      # SQLAlchemy models (Track)
+│  │  └─ session.py     # Engine/Session/Base + DATABASE_URL
+│  └─ etl/
+│     └─ load_csv.py    # CSV → normalize → chunk insert into Postgres
 ├─ data/
-│ └─ raw/ # Put your CSVs here (e.g., spotify_kaggle.csv)
+│  └─ raw/              # Put your CSVs here (e.g., spotify_kaggle.csv)
 ├─ tests/
-│ └─ test_api.py # API smoke tests
-├─ .env.example # Template env vars; copy to .env
+│  └─ test_api.py       # API smoke tests
+├─ .env.example         # Template env vars; copy to .env
 ├─ requirements.txt
 ├─ Dockerfile
 ├─ docker-compose.yml
@@ -72,7 +72,7 @@ cp .env.example .env
 
 brew services start postgresql@16
 
-# Create DB (only if it doesn't exist):
+Create DB (only if it doesn't exist):
 
 createdb spotify
 
@@ -85,20 +85,20 @@ createdb spotify
 • Put your file at data/raw/spotify_kaggle.csv.
 • The loader auto-maps common columns and drops bad rows with missing names.
 
-# Avoid duplicates if you re-run
+Avoid duplicates if you re-run
 
 psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
 
-# Load CSV → Postgres
+Load CSV → Postgres
 
 python -m app.etl.load_csv data/raw/spotify_kaggle.csv
 
-# Expected output: multiple "Inserted rows ..." lines + final "Loaded N total rows"
+Expected output: multiple "Inserted rows ..." lines + final "Loaded N total rows"
 
 5. Run the API
    uvicorn app.api.main:app --reload
 
-# or: make run
+or: make run
 
 6. Open docs
 
@@ -111,7 +111,7 @@ Spins up Postgres + API in one command.
 
 docker compose up --build -d
 
-# App at http://127.0.0.1:8000/docs
+App at http://127.0.0.1:8000/docs
 
 Load data (pick one):
 • From inside the app container (CSV is copied with the repo):
@@ -127,20 +127,20 @@ docker compose down -v
 
 Create your .env from .env.example:
 
-# Local dev (host Postgres)
+Local dev (host Postgres)
 
 DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/spotify
 
-# Docker compose (uncomment if you run app inside compose)
+Docker compose (uncomment if you run app inside compose)
 
-# DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/spotify
+DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/spotify
 
 ## 🧪 Tests & CI
 
 Run tests locally:
 make test
 
-# or
+or
 
 pytest -q
 
@@ -191,39 +191,39 @@ Response:
 
 Curl Examples:
 
-# Health
+Health
 
 curl "http://127.0.0.1:8000/health"
 
-# Summary
+Summary
 
 curl "http://127.0.0.1:8000/api/stats/summary"
 
-# Top artists
+Top artists
 
 curl "http://127.0.0.1:8000/api/stats/top-artists?limit=5"
 
-# First 5 tracks
+First 5 tracks
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5"
 
-# Free-text search
+Free-text search
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&q=tame"
 
-# Artist substring
+Artist substring
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&artist=Quantic"
 
-# Highly danceable, sorted
+Highly danceable, sorted
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&min_danceability=0.8&sort=danceability&order=desc"
 
-# Tempo range, sorted asc
+Tempo range, sorted asc
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&tempo_min=60&tempo_max=90&sort=tempo&order=asc"
 
-# Next page (use "next_offset" from previous response)
+Next page (use "next_offset" from previous response)
 
 curl "http://127.0.0.1:8000/api/tracks?limit=5&offset=5"
 
@@ -279,6 +279,15 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 
 ⸻
 
+## Screenshots
+
+![FastAPI docs](docs/api-docs.png)
+
+![Tracks endpoint example](docs/tracks-endpoint.png)
+
+![Tracks row count](docs/tracks-count.png)
+
+
 ## 🗺️ Future Enhancements
 
 • artist_exact=true or word-boundary filter
@@ -286,16 +295,3 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 • Auth (API key / OAuth) and rate limiting
 • Frontend dashboard (React) consuming the API
 • Alembic migrations
-
-⸻
-
-## 📄 License
-
-MIT — do whatever you want; attribution appreciated.
-
-⸻
-
-## 🙌 Credits
-
-• Data: Bring your own CSV (e.g., Kaggle Spotify datasets). Respect original dataset licenses.
-• Built with ❤️ using FastAPI, SQLAlchemy, pandas, and Postgres.
