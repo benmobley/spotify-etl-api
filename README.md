@@ -286,16 +286,3 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 • Auth (API key / OAuth) and rate limiting
 • Frontend dashboard (React) consuming the API
 • Alembic migrations
-
-⸻
-
-## 📄 License
-
-MIT — do whatever you want; attribution appreciated.
-
-⸻
-
-## 🙌 Credits
-
-• Data: Bring your own CSV (e.g., Kaggle Spotify datasets). Respect original dataset licenses.
-• Built with ❤️ using FastAPI, SQLAlchemy, pandas, and Postgres.
