@@ -279,6 +279,15 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 
 ⸻
 
+## Screenshots
+
+![FastAPI docs](docs/api-docs.png)
+
+![Tracks endpoint example](docs/tracks-endpoint.png)
+
+![Tracks row count](docs/tracks-count.png)
+
+
 ## 🗺️ Future Enhancements
 
 • artist_exact=true or word-boundary filter
