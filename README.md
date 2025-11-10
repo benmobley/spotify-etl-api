@@ -33,20 +33,20 @@ A tiny but complete data project that proves end-to-end skills:
 .
 ├─ app/
 │  ├─ api/
-│  │  ├─ main.py        # FastAPI app (CORS, DB init, router)
-│  │  ├─ tracks.py      # /api/tracks and /api/stats/* endpoints
-│  │  └─ schemas.py     # Pydantic response models
+│  │  ├─ main.py        
+│  │  ├─ tracks.py      
+│  │  └─ schemas.py     
 │  ├─ db/
-│  │  ├─ crud.py        # DB queries + filters/pagination
-│  │  ├─ models.py      # SQLAlchemy models (Track)
-│  │  └─ session.py     # Engine/Session/Base + DATABASE_URL
+│  │  ├─ crud.py        
+│  │  ├─ models.py      
+│  │  └─ session.py     
 │  └─ etl/
-│     └─ load_csv.py    # CSV → normalize → chunk insert into Postgres
+│     └─ load_csv.py    
 ├─ data/
-│  └─ raw/              # Put your CSVs here (e.g., spotify_kaggle.csv)
+│  └─ raw/              
 ├─ tests/
-│  └─ test_api.py       # API smoke tests
-├─ .env.example         # Template env vars; copy to .env
+│  └─ test_api.py       
+├─ .env.example         
 ├─ requirements.txt
 ├─ Dockerfile
 ├─ docker-compose.yml
