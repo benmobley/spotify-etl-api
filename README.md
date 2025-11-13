@@ -1,4 +1,4 @@
-# Spotify ETL → Postgres → FastAPI (Portfolio Project)
+# Spotify ETL → Postgres → FastAPI
 
 A tiny but complete data project that proves end-to-end skills:
 
