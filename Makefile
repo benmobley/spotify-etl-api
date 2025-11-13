@@ -16,4 +16,5 @@ docker-down:
 load-csv:
 	python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
-
+format:
+	black app tests
