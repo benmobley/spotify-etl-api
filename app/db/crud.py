@@ -3,6 +3,7 @@ from sqlalchemy import select, func, desc, asc, or_
 from .session import SessionLocal
 from .models import Track
 
+
 def _track_to_dict(t: Track) -> Dict:
     return {
         "id": t.id,
@@ -13,6 +14,7 @@ def _track_to_dict(t: Track) -> Dict:
         "tempo": t.tempo,
     }
 
+
 def get_tracks(
     limit: int = 50,
     offset: int = 0,
@@ -21,8 +23,8 @@ def get_tracks(
     min_danceability: Optional[float] = None,
     tempo_min: Optional[float] = None,
     tempo_max: Optional[float] = None,
-    sort: Optional[str] = None,      # "danceability" | "tempo" | "track_name"
-    order: str = "desc",             # "asc" | "desc"
+    sort: Optional[str] = None,  # "danceability" | "tempo" | "track_name"
+    order: str = "desc",  # "asc" | "desc"
 ) -> Dict:
     with SessionLocal() as s:
         stmt = select(Track)
@@ -63,6 +65,7 @@ def get_tracks(
         next_offset = offset + limit if (offset + limit) < total else None
         return {"items": items, "total": int(total), "next_offset": next_offset}
 
+
 def get_top_artists(limit: int = 10) -> List[Dict]:
     with SessionLocal() as s:
         stmt = (
@@ -73,6 +76,7 @@ def get_top_artists(limit: int = 10) -> List[Dict]:
         )
         rows = s.execute(stmt).all()
         return [{"artist": a, "count": int(c)} for a, c in rows]
+
 
 def get_summary() -> Dict:
     with SessionLocal() as s:

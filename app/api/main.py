@@ -13,11 +13,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 def init_db():
     Base.metadata.create_all(engine)
 
+
 app.include_router(tracks.router, prefix="/api")
+
 
 @app.get("/health")
 def health():

@@ -11,5 +11,6 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
+
 class Base(DeclarativeBase):
     pass

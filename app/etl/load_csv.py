@@ -19,13 +19,17 @@ def _read_csv(path: str) -> pd.DataFrame:
 
 def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     cols = {c.lower(): c for c in df.columns}
-    out = pd.DataFrame({
-        "track_name": df[cols.get("track_name")],
-        "artist": df[cols.get("artists")],
-        "album": df[cols.get("album_name")],
-        "danceability": pd.to_numeric(df[cols.get("danceability")], errors="coerce"),
-        "tempo": pd.to_numeric(df[cols.get("tempo")], errors="coerce"),
-    })
+    out = pd.DataFrame(
+        {
+            "track_name": df[cols.get("track_name")],
+            "artist": df[cols.get("artists")],
+            "album": df[cols.get("album_name")],
+            "danceability": pd.to_numeric(
+                df[cols.get("danceability")], errors="coerce"
+            ),
+            "tempo": pd.to_numeric(df[cols.get("tempo")], errors="coerce"),
+        }
+    )
 
     out["track_name"] = out["track_name"].astype(str).str.strip()
     out["artist"] = (
@@ -33,14 +37,18 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
         .astype(str)
         .str.strip("[]'\"")
         .str.replace(";", ",", regex=False)
-        .str.split(",").str[0].str.strip()
+        .str.split(",")
+        .str[0]
+        .str.strip()
     )
     out["album"] = out["album"].astype(str).str.strip()
 
     before = len(out)
     out = out[
-        (out["track_name"].str.len() > 0) & (out["track_name"].str.lower() != "nan") &
-        (out["artist"].str.len() > 0) & (out["artist"].str.lower() != "nan")
+        (out["track_name"].str.len() > 0)
+        & (out["track_name"].str.lower() != "nan")
+        & (out["artist"].str.len() > 0)
+        & (out["artist"].str.lower() != "nan")
     ].copy()
     dropped = before - len(out)
     if dropped:
@@ -66,7 +74,7 @@ def load_csv(path: str, replace: bool = False) -> None:
 
     step = 500
     for start in range(0, len(df), step):
-        df.iloc[start:start + step].to_sql(
+        df.iloc[start : start + step].to_sql(
             TABLE_NAME,
             con=engine,
             if_exists="append",
