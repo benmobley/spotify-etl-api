@@ -12,3 +12,8 @@ docker-up:
 
 docker-down:
 	docker compose down -v
+
+load-csv:
+	python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+
+
