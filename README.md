@@ -87,11 +87,13 @@ createdb spotify
 
 Avoid duplicates if you re-run
 
-psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
+Use the --replace flag (auto-truncates the table):
+
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 Load CSV → Postgres
 
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 Expected output: multiple "Inserted rows ..." lines + final "Loaded N total rows"
 
@@ -241,8 +243,8 @@ track_name, artists, album_name, danceability, tempo
 • Re-run safe if you TRUNCATE TABLE tracks; first
 
 Load data:
-psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 ## ⚡ Performance (Optional)
 
@@ -257,6 +259,7 @@ make test # pytest -q
 make docker-up # docker compose up --build -d
 make docker-down # docker compose down -v
 make load-sample # load small sample CSV (if present)
+make load-csv     # load CSV with --replace (safe re-run)
 
 ## 🧩 Troubleshooting
 
