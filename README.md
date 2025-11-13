@@ -1,4 +1,4 @@
-# Spotify ETL → Postgres → FastAPI (Portfolio Project)
+# Spotify ETL → Postgres → FastAPI
 
 A tiny but complete data project that proves end-to-end skills:
 
@@ -33,20 +33,20 @@ A tiny but complete data project that proves end-to-end skills:
 .
 ├─ app/
 │  ├─ api/
-│  │  ├─ main.py        # FastAPI app (CORS, DB init, router)
-│  │  ├─ tracks.py      # /api/tracks and /api/stats/* endpoints
-│  │  └─ schemas.py     # Pydantic response models
+│  │  ├─ main.py        
+│  │  ├─ tracks.py      
+│  │  └─ schemas.py     
 │  ├─ db/
-│  │  ├─ crud.py        # DB queries + filters/pagination
-│  │  ├─ models.py      # SQLAlchemy models (Track)
-│  │  └─ session.py     # Engine/Session/Base + DATABASE_URL
+│  │  ├─ crud.py        
+│  │  ├─ models.py      
+│  │  └─ session.py     
 │  └─ etl/
-│     └─ load_csv.py    # CSV → normalize → chunk insert into Postgres
+│     └─ load_csv.py    
 ├─ data/
-│  └─ raw/              # Put your CSVs here (e.g., spotify_kaggle.csv)
+│  └─ raw/              
 ├─ tests/
-│  └─ test_api.py       # API smoke tests
-├─ .env.example         # Template env vars; copy to .env
+│  └─ test_api.py       
+├─ .env.example         
 ├─ requirements.txt
 ├─ Dockerfile
 ├─ docker-compose.yml
@@ -87,11 +87,13 @@ createdb spotify
 
 Avoid duplicates if you re-run
 
-psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
+Use the --replace flag (auto-truncates the table):
+
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 Load CSV → Postgres
 
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 Expected output: multiple "Inserted rows ..." lines + final "Loaded N total rows"
 
@@ -241,8 +243,8 @@ track_name, artists, album_name, danceability, tempo
 • Re-run safe if you TRUNCATE TABLE tracks; first
 
 Load data:
-psql -h localhost -U postgres -d spotify -c "TRUNCATE TABLE tracks;"
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 ## ⚡ Performance (Optional)
 
@@ -257,6 +259,7 @@ make test # pytest -q
 make docker-up # docker compose up --build -d
 make docker-down # docker compose down -v
 make load-sample # load small sample CSV (if present)
+make load-csv     # load CSV with --replace (safe re-run)
 
 ## 🧩 Troubleshooting
 
