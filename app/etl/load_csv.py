@@ -2,6 +2,7 @@ import sys
 import argparse
 import pandas as pd
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
 
 from app.db.session import engine, Base
 from app.db.models import Track
@@ -58,32 +59,45 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_csv(path: str, replace: bool = False) -> None:
-    """
-    Load a Spotify CSV into the tracks table.
-
-    If replace=True, the tracks table is truncated before inserting.
-    """
     Base.metadata.create_all(engine)
 
     df = _normalize(_read_csv(path))
+    step = 500
+    total = len(df)
 
-    if replace:
-        with engine.begin() as conn:
-            conn.execute(text(f"TRUNCATE TABLE {TABLE_NAME};"))
+    with engine.begin() as conn:
+        if replace:
+            conn.execute(text(f"TRUNCATE TABLE {TABLE_NAME} RESTART IDENTITY;"))
             print(f"Truncated table {TABLE_NAME}")
 
-    step = 500
-    for start in range(0, len(df), step):
-        df.iloc[start : start + step].to_sql(
-            TABLE_NAME,
-            con=engine,
-            if_exists="append",
-            index=False,
-        )
-        print(f"Inserted rows {start}-{min(start + step, len(df))}")
+        for start in range(0, total, step):
+            chunk = df.iloc[start : start + step].copy()
+            _upsert_chunk(conn, chunk)
+            print(f"Upserted rows {start}-{min(start + step, total)}")
 
-    print(f"✅ Loaded {len(df)} total rows into {TABLE_NAME}")
+    print(f"✅ Upserted {total} rows into {TABLE_NAME}")
 
+def _upsert_chunk(conn, df_chunk: pd.DataFrame) -> None:
+    if df_chunk.empty:
+        return
+
+    table = Track.__table__
+    records = df_chunk.to_dict(orient="records")
+
+    stmt = insert(table).values(records)
+
+    update_cols = {
+        c.name: getattr(stmt.excluded, c.name)
+        for c in table.c
+        if c.name != "id"
+    }
+
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["track_name", "artist", "album"],
+        set_=update_cols,
+    )
+
+    conn.execute(stmt)
 
 def main(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(
