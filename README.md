@@ -32,21 +32,21 @@ A tiny but complete data project that proves end-to-end skills:
 
 .
 ├─ app/
-│  ├─ api/
-│  │  ├─ main.py        
-│  │  ├─ tracks.py      
-│  │  └─ schemas.py     
-│  ├─ db/
-│  │  ├─ crud.py        
-│  │  ├─ models.py      
-│  │  └─ session.py     
-│  └─ etl/
-│     └─ load_csv.py    
+│ ├─ api/
+│ │ ├─ main.py  
+│ │ ├─ tracks.py  
+│ │ └─ schemas.py  
+│ ├─ db/
+│ │ ├─ crud.py  
+│ │ ├─ models.py  
+│ │ └─ session.py  
+│ └─ etl/
+│ └─ load_csv.py  
 ├─ data/
-│  └─ raw/              
+│ └─ raw/  
 ├─ tests/
-│  └─ test_api.py       
-├─ .env.example         
+│ └─ test_api.py  
+├─ .env.example  
 ├─ requirements.txt
 ├─ Dockerfile
 ├─ docker-compose.yml
@@ -251,6 +251,8 @@ python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 Create indexes for faster queries on large datasets:
 psql -h localhost -U postgres -d spotify -c "CREATE INDEX IF NOT EXISTS tracks_artist_idx ON tracks(artist);"
 psql -h localhost -U postgres -d spotify -c "CREATE INDEX IF NOT EXISTS tracks_name_idx ON tracks(track_name);"
+psql ... "CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist);"
+psql ... "CREATE INDEX IF NOT EXISTS idx_tracks_track_name ON tracks(track_name);"
 
 ## 🛠 Makefile Shortcuts
 
@@ -259,7 +261,7 @@ make test # pytest -q
 make docker-up # docker compose up --build -d
 make docker-down # docker compose down -v
 make load-sample # load small sample CSV (if present)
-make load-csv     # load CSV with --replace (safe re-run)
+make load-csv # load CSV with --replace (safe re-run)
 
 ## 🧩 Troubleshooting
 
@@ -289,7 +291,6 @@ Select interpreter: Cmd+Shift+P → Python: Select Interpreter → ./.venv/bin/p
 ![Tracks endpoint example](docs/tracks-endpoint.png)
 
 ![Tracks row count](docs/tracks-count.png)
-
 
 ## 🗺️ Future Enhancements
 
