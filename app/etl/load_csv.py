@@ -161,12 +161,9 @@ def load_csv(path: str, replace: bool = False) -> None:
         except SQLAlchemyError as e:
             raise DatabaseError(f"Cannot connect to database: {e}")
         
-        # Create tables
-        try:
-            Base.metadata.create_all(engine)
-            logger.info("Database tables verified/created")
-        except SQLAlchemyError as e:
-            raise DatabaseError(f"Failed to create database tables: {e}")
+        # Note: Database schema should be managed with Alembic migrations
+        # Run: `alembic upgrade head` to ensure schema is up to date
+        logger.info("Database schema should be managed with 'alembic upgrade head'")
 
         # Process data
         df = _normalize(_read_csv(path))

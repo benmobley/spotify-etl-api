@@ -8,9 +8,10 @@ A tiny but complete data project that proves end-to-end skills:
 
 ## ✨ What this does
 
-- **ETL:** Loads a Spotify-like CSV (e.g., Kaggle) into Postgres with light cleaning.
+- **ETL:** Loads a Spotify-like CSV (e.g., Kaggle) into Postgres with comprehensive data validation and error handling.
 - **API:** Serves tracks and simple analytics via **FastAPI** (with typed responses).
 - **Filters & Pagination:** Query by artist, danceability, tempo range; sort & paginate.
+- **Error Handling:** Production-ready error handling with structured logging and graceful failure recovery.
 - **Tests:** `pytest` smoke tests.
 - **Dev UX:** `.env.example`, Makefile shortcuts, CORS enabled, typed schemas, OpenAPI docs.
 - **Ops:** Dockerfile + docker-compose to spin up Postgres + API. GitHub Actions CI.
@@ -20,10 +21,10 @@ A tiny but complete data project that proves end-to-end skills:
 ## 🧱 Tech Stack
 
 - **Python 3.12**, **FastAPI**, **Uvicorn**
-- **SQLAlchemy 2.x**, **psycopg**
+- **SQLAlchemy 2.x**, **Alembic**, **psycopg**
 - **PostgreSQL 16**
 - **pandas** (for CSV ETL)
-- **pytest**, **GitHub Actions** (CI)
+- **pytest**, **GitHub Actions** (CI)  
 - **Docker** + **docker-compose**
 
 ---
@@ -80,24 +81,44 @@ createdb spotify
 
 • Host: localhost, Port: 5432, User: postgres, Password: postgres, DB: spotify
 
-4. Load sample data or a Kaggle CSV
+4. **Run database migrations** (first time or after schema changes):
 
-• Put your file at data/raw/spotify_kaggle.csv.
-• The loader auto-maps common columns and drops bad rows with missing names.
+```bash
+python migrate.py
+```
 
-Avoid duplicates if you re-run
+Or manually:
+```bash
+alembic upgrade head
+```
 
-Use the --replace flag (auto-truncates the table):
+5. Load sample data or a Kaggle CSV
 
+• Put your file at `data/raw/spotify_kaggle.csv`.
+• The loader validates file format, maps columns, and handles errors gracefully.
+• Comprehensive logging shows progress and any issues encountered.
+
+**Basic usage:**
+
+```bash
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+```
+
+**Replace existing data** (truncates table first):
+
+```bash
 python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+```
 
-Load CSV → Postgres
+**With debug logging:**
 
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+```bash
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --log-level DEBUG
+```
 
-Expected output: multiple "Inserted rows ..." lines + final "Loaded N total rows"
+**Expected output:** Structured logs with timestamps showing validation, progress, and completion status.
 
-5. Run the API
+6. Run the API
    uvicorn app.api.main:app --reload
 
 or: make run
@@ -115,12 +136,31 @@ docker compose up --build -d
 
 App at http://127.0.0.1:8000/docs
 
-Load data (pick one):
-• From inside the app container (CSV is copied with the repo):
-docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+**Run migrations first:**
+```bash
+docker compose exec app python migrate.py
+```
+
+**Load data (pick one):**
+
+• From inside the app container:
+
+```bash
+docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+```
+
 • From your host (connects to the mapped DB port):
+
+```bash
 DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/spotify \
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+```
+
+• With debug logging:
+
+```bash
+docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv --log-level DEBUG
+```
 
 Stop & clean:
 docker compose down -v
@@ -137,21 +177,96 @@ Docker compose (uncomment if you run app inside compose)
 
 DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/spotify
 
+## 🗃️ Database Migrations
+
+This project uses **Alembic** for database schema management, providing version-controlled, safe database changes.
+
+### Migration Commands
+
+**Run all pending migrations:**
+```bash
+python migrate.py
+# or manually: alembic upgrade head
+```
+
+**Check current migration status:**
+```bash
+python migrate.py --check
+# or manually: alembic current
+```
+
+**Create a new migration after model changes:**
+```bash
+alembic revision --autogenerate -m "Description of changes"
+```
+
+**Rollback to previous migration:**
+```bash
+alembic downgrade -1
+```
+
+### Migration Benefits
+- **Version Control:** Track all database schema changes
+- **Safe Deployments:** Structured schema updates without data loss  
+- **Rollback Capability:** Revert problematic changes easily
+- **Team Collaboration:** Consistent schema across environments
+- **Production Ready:** No more `create_all()` - proper database lifecycle management
+
+### Migration Files
+- Located in: `/alembic/versions/`
+- Current schema: `e1d49c3473ec_initial_tracks_table_with_indexes.py`
+- Includes: Table creation, indexes for performance, unique constraints
+
+## 🛠️ ETL Features
+
+### Error Handling & Validation
+
+- **File Validation:** Checks file existence, permissions, and format before processing
+- **Data Validation:** Validates required columns and data types with clear error messages
+- **Database Connectivity:** Tests connection before starting and handles failures gracefully
+- **Batch Processing:** Processes data in chunks with individual error recovery
+- **Custom Exceptions:** Structured error types with specific exit codes for automation
+
+### Logging Options
+
+- **Structured Logging:** Timestamps, log levels, and contextual information
+- **Configurable Levels:** `--log-level DEBUG|INFO|WARNING|ERROR`
+- **Progress Tracking:** Real-time progress updates during large data loads
+- **Error Details:** Comprehensive error logging with stack traces when needed
+
+### ETL Exit Codes
+
+- `0` - Success
+- `1` - File validation error (file not found, permissions, etc.)
+- `2` - Data validation error (missing columns, invalid format)
+- `3` - Database error (connection, SQL errors)
+- `4` - General ETL error
+- `5` - Unexpected error
+- `130` - User interruption (Ctrl+C)
+
 ## 🧪 Tests & CI
 
 Run tests locally:
+
+```bash
 make test
+```
 
 or
 
+```bash
 pytest -q
+```
 
 CI (GitHub Actions):
-• .github/workflows/ci.yml boots Postgres service and runs pytest on push/PR.
+• `.github/workflows/ci.yml` boots Postgres service and runs pytest on push/PR.
 
 If you see ModuleNotFoundError: app, add a pytest.ini with:
+
+```ini
 [pytest]
 pythonpath = .
+```
 
 ## 🧭 API Endpoints (FastAPI)
 
