@@ -1,12 +1,36 @@
 import sys
 import argparse
 import logging
+import os
+from pathlib import Path
+from typing import Optional
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from app.db.session import engine, Base
 from app.db.models import Track
+
+
+class ETLError(Exception):
+    """Base exception for ETL operations"""
+    pass
+
+
+class FileValidationError(ETLError):
+    """Raised when CSV file validation fails"""
+    pass
+
+
+class DataValidationError(ETLError):
+    """Raised when data validation fails"""
+    pass
+
+
+class DatabaseError(ETLError):
+    """Raised when database operations fail"""
+    pass
 
 # Configure logging
 logging.basicConfig(
@@ -21,25 +45,82 @@ TABLE_NAME = Track.__tablename__
 
 
 def _read_csv(path: str) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    if df.columns[0].lower().startswith("unnamed"):
-        df = df.drop(columns=[df.columns[0]], errors="ignore")
-    return df
+    """Read and validate CSV file with proper error handling"""
+    try:
+        # Validate file exists and is readable
+        csv_path = Path(path)
+        if not csv_path.exists():
+            raise FileValidationError(f"CSV file not found: {path}")
+        
+        if not csv_path.is_file():
+            raise FileValidationError(f"Path is not a file: {path}")
+        
+        if csv_path.stat().st_size == 0:
+            raise FileValidationError(f"CSV file is empty: {path}")
+        
+        logger.info(f"Reading CSV file: {path} ({csv_path.stat().st_size} bytes)")
+        
+        # Read CSV with error handling
+        df = pd.read_csv(path)
+        
+        if df.empty:
+            raise DataValidationError("CSV file contains no data rows")
+        
+        logger.info(f"Successfully read {len(df)} rows from CSV")
+        
+        # Clean up unnamed index columns
+        if df.columns[0].lower().startswith("unnamed"):
+            df = df.drop(columns=[df.columns[0]], errors="ignore")
+            logger.info("Removed unnamed index column")
+        
+        return df
+        
+    except pd.errors.EmptyDataError:
+        raise DataValidationError(f"CSV file is empty or has no valid data: {path}")
+    except pd.errors.ParserError as e:
+        raise DataValidationError(f"Failed to parse CSV file: {e}")
+    except FileNotFoundError:
+        raise FileValidationError(f"CSV file not found: {path}")
+    except PermissionError:
+        raise FileValidationError(f"Permission denied reading CSV file: {path}")
+    except Exception as e:
+        raise ETLError(f"Unexpected error reading CSV file: {e}")
 
 
 def _normalize(df: pd.DataFrame) -> pd.DataFrame:
-    cols = {c.lower(): c for c in df.columns}
-    out = pd.DataFrame(
-        {
-            "track_name": df[cols.get("track_name")],
-            "artist": df[cols.get("artists")],
-            "album": df[cols.get("album_name")],
-            "danceability": pd.to_numeric(
-                df[cols.get("danceability")], errors="coerce"
-            ),
-            "tempo": pd.to_numeric(df[cols.get("tempo")], errors="coerce"),
-        }
-    )
+    """Normalize and validate DataFrame with comprehensive error handling"""
+    try:
+        logger.info(f"Starting normalization of {len(df)} rows")
+        
+        # Validate required columns exist
+        cols = {c.lower(): c for c in df.columns}
+        required_cols = ["track_name", "artists", "album_name"]
+        missing_cols = [col for col in required_cols if col not in cols]
+        
+        if missing_cols:
+            available_cols = list(cols.keys())
+            raise DataValidationError(
+                f"Missing required columns: {missing_cols}. "
+                f"Available columns: {available_cols}"
+            )
+        
+        # Create normalized DataFrame with error handling
+        out = pd.DataFrame(
+            {
+                "track_name": df[cols.get("track_name")],
+                "artist": df[cols.get("artists")],
+                "album": df[cols.get("album_name")],
+                "danceability": pd.to_numeric(
+                    df[cols.get("danceability")], errors="coerce"
+                ),
+                "tempo": pd.to_numeric(df[cols.get("tempo")], errors="coerce"),
+            }
+        )
+        
+    except KeyError as e:
+        raise DataValidationError(f"Column mapping error: {e}")
+    except Exception as e:
+        raise ETLError(f"Unexpected error during normalization: {e}")
 
     out["track_name"] = out["track_name"].astype(str).str.strip()
     out["artist"] = (
@@ -68,47 +149,102 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_csv(path: str, replace: bool = False) -> None:
-    Base.metadata.create_all(engine)
+    """Load CSV data into database with comprehensive error handling"""
+    try:
+        logger.info(f"Starting ETL process for: {path}")
+        
+        # Test database connection
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Database connection verified")
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Cannot connect to database: {e}")
+        
+        # Create tables
+        try:
+            Base.metadata.create_all(engine)
+            logger.info("Database tables verified/created")
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Failed to create database tables: {e}")
 
-    df = _normalize(_read_csv(path))
-    step = 500
-    total = len(df)
+        # Process data
+        df = _normalize(_read_csv(path))
+        step = 500
+        total = len(df)
+        
+        if total == 0:
+            raise DataValidationError("No valid data to load after normalization")
+        
+        logger.info(f"Starting database load of {total} rows in batches of {step}")
 
-    with engine.begin() as conn:
-        if replace:
-            conn.execute(text(f"TRUNCATE TABLE {TABLE_NAME} RESTART IDENTITY;"))
-            logger.info(f"Truncated table {TABLE_NAME}")
+        try:
+            with engine.begin() as conn:
+                if replace:
+                    conn.execute(text(f"TRUNCATE TABLE {TABLE_NAME} RESTART IDENTITY;"))
+                    logger.info(f"Truncated table {TABLE_NAME}")
 
-        for start in range(0, total, step):
-            chunk = df.iloc[start : start + step].copy()
-            _upsert_chunk(conn, chunk)
-            logger.info(f"Upserted rows {start}-{min(start + step, total)}")
+                processed = 0
+                for start in range(0, total, step):
+                    try:
+                        chunk = df.iloc[start : start + step].copy()
+                        _upsert_chunk(conn, chunk)
+                        processed += len(chunk)
+                        logger.info(f"Upserted rows {start}-{min(start + step, total)}")
+                    except Exception as e:
+                        logger.error(f"Failed to upsert chunk {start}-{min(start + step, total)}: {e}")
+                        raise DatabaseError(f"Database upsert failed at row {start}: {e}")
 
-    logger.info(f"✅ Successfully upserted {total} rows into {TABLE_NAME}")
+            logger.info(f"✅ Successfully upserted {processed} rows into {TABLE_NAME}")
+            
+        except SQLAlchemyError as e:
+            raise DatabaseError(f"Database transaction failed: {e}")
+            
+    except (FileValidationError, DataValidationError, DatabaseError):
+        # Re-raise our custom exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in ETL process: {e}")
+        raise ETLError(f"ETL process failed: {e}")
 
 def _upsert_chunk(conn, df_chunk: pd.DataFrame) -> None:
+    """Upsert a chunk of data with error handling"""
     if df_chunk.empty:
         return
 
-    table = Track.__table__
-    records = df_chunk.to_dict(orient="records")
+    try:
+        table = Track.__table__
+        records = df_chunk.to_dict(orient="records")
+        
+        # Validate records before inserting
+        if not records:
+            logger.warning("No records to upsert in chunk")
+            return
 
-    stmt = insert(table).values(records)
+        stmt = insert(table).values(records)
 
-    update_cols = {
-        c.name: getattr(stmt.excluded, c.name)
-        for c in table.c
-        if c.name != "id"
-    }
+        update_cols = {
+            c.name: getattr(stmt.excluded, c.name)
+            for c in table.c
+            if c.name != "id"
+        }
 
-    stmt = stmt.on_conflict_do_update(
-        index_elements=["track_name", "artist", "album"],
-        set_=update_cols,
-    )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["track_name", "artist", "album"],
+            set_=update_cols,
+        )
 
-    conn.execute(stmt)
+        conn.execute(stmt)
+        
+    except IntegrityError as e:
+        raise DatabaseError(f"Data integrity violation during upsert: {e}")
+    except SQLAlchemyError as e:
+        raise DatabaseError(f"Database error during upsert: {e}")
+    except Exception as e:
+        raise ETLError(f"Unexpected error during upsert: {e}")
 
 def main(argv: list[str]) -> None:
+    """Main entry point with comprehensive error handling"""
     parser = argparse.ArgumentParser(
         description="Load a Spotify CSV into the tracks table."
     )
@@ -121,9 +257,43 @@ def main(argv: list[str]) -> None:
         action="store_true",
         help="Truncate the tracks table before loading",
     )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Set logging level",
+    )
 
-    args = parser.parse_args(argv)
-    load_csv(args.csv_path, replace=args.replace)
+    try:
+        args = parser.parse_args(argv)
+        
+        # Set log level
+        logger.setLevel(getattr(logging, args.log_level))
+        
+        logger.info(f"Starting ETL with arguments: csv_path={args.csv_path}, replace={args.replace}")
+        
+        load_csv(args.csv_path, replace=args.replace)
+        
+        logger.info("ETL process completed successfully")
+        
+    except FileValidationError as e:
+        logger.error(f"File validation error: {e}")
+        sys.exit(1)
+    except DataValidationError as e:
+        logger.error(f"Data validation error: {e}")
+        sys.exit(2)
+    except DatabaseError as e:
+        logger.error(f"Database error: {e}")
+        sys.exit(3)
+    except ETLError as e:
+        logger.error(f"ETL error: {e}")
+        sys.exit(4)
+    except KeyboardInterrupt:
+        logger.info("ETL process interrupted by user")
+        sys.exit(130)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        sys.exit(5)
 
 
 if __name__ == "__main__":
