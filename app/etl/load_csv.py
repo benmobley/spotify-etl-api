@@ -1,11 +1,20 @@
 import sys
 import argparse
+import logging
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from app.db.session import engine, Base
 from app.db.models import Track
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 
 TABLE_NAME = Track.__tablename__
@@ -53,7 +62,7 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     ].copy()
     dropped = before - len(out)
     if dropped:
-        print(f"Dropped {dropped} rows with missing track_name/artist")
+        logger.info(f"Dropped {dropped} rows with missing track_name/artist")
 
     return out
 
@@ -68,14 +77,14 @@ def load_csv(path: str, replace: bool = False) -> None:
     with engine.begin() as conn:
         if replace:
             conn.execute(text(f"TRUNCATE TABLE {TABLE_NAME} RESTART IDENTITY;"))
-            print(f"Truncated table {TABLE_NAME}")
+            logger.info(f"Truncated table {TABLE_NAME}")
 
         for start in range(0, total, step):
             chunk = df.iloc[start : start + step].copy()
             _upsert_chunk(conn, chunk)
-            print(f"Upserted rows {start}-{min(start + step, total)}")
+            logger.info(f"Upserted rows {start}-{min(start + step, total)}")
 
-    print(f"✅ Upserted {total} rows into {TABLE_NAME}")
+    logger.info(f"✅ Successfully upserted {total} rows into {TABLE_NAME}")
 
 def _upsert_chunk(conn, df_chunk: pd.DataFrame) -> None:
     if df_chunk.empty:
