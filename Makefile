@@ -1,20 +1,48 @@
-run:
-	uvicorn app.api.main:app --reload
-
-test:
-	pytest -q
-
-load-sample:
-	python -m app.etl.load_csv data/raw/spotify_kaggle.csv
-
-docker-up:
+# Docker-first commands
+up:
 	docker compose up --build -d
 
-docker-down:
+setup: up
+	@./scripts/setup.sh
+
+down:
 	docker compose down -v
 
+logs:
+	docker compose logs -f
+
+# Data loading commands
+load-sample:
+	docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+
 load-csv:
-	python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+	docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+
+load-custom:
+	@echo "Usage: make load-custom CSV_FILE=path/to/your/file.csv"
+	@if [ -z "$(CSV_FILE)" ]; then \
+		echo "Error: Please specify CSV_FILE=path/to/your/file.csv"; \
+		exit 1; \
+	fi
+	docker compose exec app python -m app.etl.load_csv $(CSV_FILE)
+
+# Database commands
+migrate:
+	docker compose exec app python migrate.py
+
+db-shell:
+	docker compose exec db psql -U postgres -d spotify
+
+# Development commands
+shell:
+	docker compose exec app bash
+
+test:
+	docker compose exec app pytest -q
 
 format:
-	black app tests
+	docker compose exec app black app tests
+
+# Legacy aliases (will be removed)
+docker-up: up
+docker-down: down
