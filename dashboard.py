@@ -98,7 +98,7 @@ def main():
     st.sidebar.header("🎛️ Filters & Controls")
     
     # Get summary stats first
-    summary_data = fetch_api_data("/stats/summary")
+    summary_data = fetch_api_data("/api/stats/summary")
     if summary_data:
         st.sidebar.metric("Total Tracks", f"{summary_data['total_tracks']:,}")
         st.sidebar.metric("Avg Danceability", f"{summary_data['avg_danceability']:.3f}")
@@ -187,7 +187,7 @@ def show_analytics_tab(summary_data):
     
     # Top Artists Chart
     st.subheader("🎤 Top Artists by Track Count")
-    top_artists_data = fetch_api_data("/stats/top-artists", {"limit": 15})
+    top_artists_data = fetch_api_data("/api/stats/top-artists", {"limit": 15})
     
     if top_artists_data:
         df_artists = pd.DataFrame(top_artists_data)
@@ -232,7 +232,7 @@ def show_track_explorer_tab(search_query, artist_filter, min_danceability, tempo
         params["tempo_max"] = tempo_range[1]
     
     # Fetch tracks data
-    tracks_data = fetch_api_data("/tracks", params)
+    tracks_data = fetch_api_data("/api/tracks", params)
     
     if not tracks_data:
         st.error("Unable to load tracks data")
@@ -308,7 +308,7 @@ def show_statistics_tab():
     st.header("📈 Detailed Statistics")
     
     # Fetch a larger sample for statistics
-    sample_data = fetch_api_data("/tracks", {"limit": 500})
+    sample_data = fetch_api_data("/api/tracks", {"limit": 500})
     
     if not sample_data or not sample_data["items"]:
         st.error("Unable to load sample data for statistics")
