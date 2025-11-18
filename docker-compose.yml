@@ -36,10 +36,11 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - .:/app # Mount source code for development
+      - .:/app  # Mount source code for development
     command: streamlit run dashboard.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
     environment:
       - STREAMLIT_SERVER_HEADLESS=true
+      - API_BASE_URL=http://app:8000
 
 volumes:
   pgdata:

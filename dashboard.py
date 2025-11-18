@@ -15,12 +15,44 @@ st.set_page_config(
 )
 
 # API Configuration
-API_BASE_URL = "http://localhost:8000"
+import os
+
+# Try Docker internal networking first, fallback to localhost
+def get_api_base_url():
+    """Determine the correct API base URL"""
+    docker_url = os.getenv("API_BASE_URL", "http://app:8000")
+    localhost_url = "http://localhost:8000"
+    
+    # Test Docker internal URL first
+    try:
+        response = requests.get(f"{docker_url}/health", timeout=3)
+        if response.status_code == 200:
+            return docker_url
+    except:
+        pass
+    
+    # Fallback to localhost
+    try:
+        response = requests.get(f"{localhost_url}/health", timeout=3)
+        if response.status_code == 200:
+            return localhost_url
+    except:
+        pass
+    
+    # Return Docker URL as default if both fail
+    return docker_url
+
+# Initialize API_BASE_URL
+API_BASE_URL = None
 
 # Helper functions
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def fetch_api_data(endpoint, params=None):
     """Fetch data from API with error handling"""
+    global API_BASE_URL
+    if API_BASE_URL is None:
+        API_BASE_URL = get_api_base_url()
+    
     try:
         response = requests.get(f"{API_BASE_URL}{endpoint}", params=params, timeout=10)
         response.raise_for_status()
@@ -31,6 +63,10 @@ def fetch_api_data(endpoint, params=None):
 
 def check_api_connection():
     """Check if API is accessible"""
+    global API_BASE_URL
+    if API_BASE_URL is None:
+        API_BASE_URL = get_api_base_url()
+    
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         return response.status_code == 200
