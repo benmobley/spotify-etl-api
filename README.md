@@ -1,13 +1,13 @@
 # Spotify ETL → Postgres → FastAPI
 
-Complete data pipeline with CSV ETL, Postgres database, FastAPI endpoints, and production-ready features.
+Working data pipeline that loads 89,348 unique Spotify tracks from CSV into PostgreSQL with FastAPI endpoints and production-ready features.
 
 ## ✨ Features
 
-- **ETL Pipeline:** Validates & loads Spotify CSV data with error handling & logging
-- **REST API:** FastAPI with filtering, pagination, and analytics endpoints
-- **Database:** Alembic migrations, proper indexing, and data integrity
-- **Production Ready:** Docker, CI/CD, structured logging, comprehensive error handling
+- **ETL Pipeline:** Loads 114K→89K unique tracks with deduplication, validation & comprehensive error handling
+- **REST API:** FastAPI with search, filtering, pagination, and analytics endpoints  
+- **Database:** PostgreSQL with proper constraints, migrations, and data integrity
+- **Production Ready:** Docker, structured logging, batch processing, and robust error handling
 
 ## 🧱 Tech Stack
 
@@ -45,9 +45,8 @@ uvicorn app.api.main:app --reload
 # 1. Start services
 docker compose up --build -d
 
-# 2. Run migrations & load data
-docker compose exec app python migrate.py
-docker compose exec app python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
+# 2. Load sample data (89K unique tracks)
+make load-sample
 ```
 
 **API Docs:** http://localhost:8000/docs  
@@ -85,10 +84,10 @@ alembic downgrade -1
 
 ## 🛠️ ETL Features
 
+**Deduplication:** Removes 24,651 duplicate records based on (track_name, artist, album) constraint  
 **Error Handling:** File validation, data validation, database connectivity checks  
-**Logging:** Structured logs with configurable levels (`--log-level DEBUG|INFO|WARNING|ERROR`)  
-**Exit Codes:** Specific codes for different error types (file, data, database, etc.)  
-**Batch Processing:** Chunks large datasets for memory efficiency
+**Logging:** Structured logs with progress tracking and detailed statistics  
+**Batch Processing:** 500-record chunks with proper upsert handling for large datasets
 
 ## 🧭 API Endpoints
 
@@ -147,7 +146,8 @@ make test
 
 ```bash
 make run          # Start API server
-make test         # Run tests
+make test         # Run tests  
+make load-sample  # Load 89K unique tracks
 make docker-up    # Start with Docker
 make docker-down  # Stop Docker services
 ```
@@ -155,10 +155,10 @@ make docker-down  # Stop Docker services
 **ETL Options:**
 
 ```bash
-# Basic load
-python -m app.etl.load_csv data/raw/spotify_kaggle.csv
+# Load with deduplication (recommended)
+make load-sample
 
-# Replace existing data
+# Direct load with replace flag
 python -m app.etl.load_csv data/raw/spotify_kaggle.csv --replace
 
 # Debug logging
@@ -179,4 +179,4 @@ alembic/          # Database migration files
 
 ---
 
-**🎯 This project demonstrates:** ETL pipelines, REST APIs, database management, error handling, testing, containerization, and CI/CD - all production-ready patterns for data engineering projects.
+**🎯 This project demonstrates:** Complete ETL pipeline (114K→89K records), REST API with analytics, PostgreSQL with constraints, deduplication logic, error handling, Docker deployment - all production-ready data engineering patterns.
