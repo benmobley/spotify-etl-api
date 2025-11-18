@@ -1,37 +1,47 @@
-# 🎵 Spotify ETL → PostgreSQL → FastAPI
+# 🎵 Spotify ETL → PostgreSQL → FastAPI + Dashboard
 
-Fully dockerized data pipeline that loads 89,348 unique Spotify tracks from CSV into PostgreSQL with FastAPI endpoints. **No Python setup required** - everything runs in Docker!
+Fully dockerized data pipeline that loads 89,348 unique Spotify tracks from CSV into PostgreSQL with FastAPI endpoints **and interactive Streamlit dashboard**. **No Python setup required** - everything runs in Docker!
 
 ## ✨ Features
 
 - **🐳 Fully Dockerized:** Zero local setup - just Docker required
-- **📊 ETL Pipeline:** Loads 114K→89K unique tracks with automatic deduplication  
+- **📊 ETL Pipeline:** Loads 114K→89K unique tracks with automatic deduplication
 - **🚀 REST API:** FastAPI with search, filtering, pagination, and analytics
+- **📈 Interactive Dashboard:** Streamlit dashboard with charts, filters, and data exploration
 - **🗄️ PostgreSQL:** Proper constraints, migrations, and data integrity
 - **📁 Custom CSV Support:** Easy loading of your own Spotify CSV files
 
 ## 🧱 Tech Stack
 
-**Docker** • **Python 3.12** • **FastAPI** • **SQLAlchemy 2.x** • **Alembic** • **PostgreSQL 16**
+**Docker** • **Python 3.12** • **FastAPI** • **SQLAlchemy 2.x** • **Alembic** • **PostgreSQL 16** • **Streamlit** • **Plotly**
 
 ## ⚡ Quick Start
 
 **Prerequisites:** Docker Desktop running
 
-### Option 1: One-Command Start
+### Option 1: Full Stack with Dashboard (Recommended)
+
+```bash
+git clone <repo-url> && cd spotify-etl-api
+./start-with-dashboard.sh
+```
+
+This will:
+
+1. 🚀 Start all services (PostgreSQL + FastAPI + Dashboard)
+2. 🔄 Run database migrations
+3. 📊 Load 89K sample tracks
+4. 📈 Launch interactive dashboard at http://localhost:8501
+5. ✅ API ready at http://localhost:8000/docs
+
+### Option 2: API Only
 
 ```bash
 git clone <repo-url> && cd spotify-etl-api
 ./start.sh
 ```
 
-This will:
-1. 🚀 Start all services (PostgreSQL + FastAPI)
-2. 🔄 Run database migrations  
-3. 📊 Load 89K sample tracks
-4. ✅ Ready at http://localhost:8000/docs
-
-### Option 2: Step-by-Step
+### Option 3: Step-by-Step
 
 ```bash
 # 1. Clone and start services
@@ -41,8 +51,12 @@ make setup
 # 2. Load sample data
 make load-sample
 
-# 3. Visit API docs
-open http://localhost:8000/docs
+# 3. Start dashboard (optional)
+make dashboard
+
+# 4. Visit services
+open http://localhost:8501    # Dashboard
+open http://localhost:8000/docs  # API docs
 ```
 
 ## 📁 Loading Custom CSV Files
@@ -64,7 +78,7 @@ docker compose exec app python -m app.etl.load_csv data/my-spotify-data.csv --re
 
 - **🔄 Auto-Deduplication:** Removes 24,651 duplicate records automatically
 - **✅ Data Validation:** File validation, column checking, data type conversion
-- **📋 Batch Processing:** Handles large files in 500-record chunks  
+- **📋 Batch Processing:** Handles large files in 500-record chunks
 - **🔍 Progress Tracking:** Detailed logs with statistics and progress updates
 - **⚠️ Error Handling:** Comprehensive error reporting with specific exit codes
 
@@ -108,6 +122,34 @@ curl "http://localhost:8000/api/tracks?min_danceability=0.8&sort=danceability&or
 curl http://localhost:8000/api/stats/top-artists
 ```
 
+## 📈 Interactive Dashboard Features
+
+**Dashboard URL:** http://localhost:8501
+
+### 🎯 Key Features:
+- **📊 Analytics Tab:** Dataset overview, top artists chart, key metrics
+- **🎵 Track Explorer:** Advanced filtering with interactive scatter plots
+- **📈 Statistics Tab:** Distribution charts and statistical analysis
+
+### 🔍 Interactive Filters:
+- **Search:** Find tracks by name, artist, or album
+- **Artist Filter:** Focus on specific artists
+- **Danceability Slider:** Filter by danceability score (0-1)
+- **Tempo Range:** Filter by BPM range
+- **Sorting:** Sort by danceability, tempo, or track name
+
+### 📊 Visualizations:
+- **Top Artists Bar Chart:** Most prolific artists by track count
+- **Danceability vs Tempo Scatter Plot:** Interactive track exploration
+- **Distribution Histograms:** Data distribution analysis
+- **Real-time Metrics:** Live statistics from the API
+
+### ⚡ Dashboard Commands:
+```bash
+make dashboard       # Start dashboard service
+make dashboard-logs  # View dashboard logs
+```
+
 ## 🧪 Testing
 
 ```bash
@@ -126,14 +168,16 @@ make test
 ```bash
 # Main commands
 make setup           # Start services + run migrations
-make load-sample     # Load 89K sample tracks  
+make load-sample     # Load 89K sample tracks
 make load-custom CSV_FILE=data/file.csv  # Load your CSV
+make dashboard       # Start interactive dashboard
 make logs            # View service logs
 make down            # Stop all services
 
-# Development  
+# Development
 make shell           # Access app container
 make test            # Run tests
+make dashboard-logs  # Dashboard logs only
 make migrate         # Run database migrations
 make db-shell        # PostgreSQL shell
 ```
@@ -158,7 +202,7 @@ curl http://localhost:8000/api/stats/summary
 
 ```
 ├── app/
-│   ├── api/          # FastAPI routes and schemas  
+│   ├── api/          # FastAPI routes and schemas
 │   ├── db/           # Database models and operations
 │   └── etl/          # CSV loading pipeline
 ├── data/
@@ -173,6 +217,7 @@ curl http://localhost:8000/api/stats/summary
 ## 🎯 Why This Project?
 
 Demonstrates **production-ready data engineering patterns**:
+
 - 🐳 **Containerization:** Zero-setup deployment with Docker
 - 📊 **ETL Pipeline:** Real data processing (114K→89K records) with deduplication
 - 🚀 **REST API:** Search, filtering, pagination, analytics endpoints

@@ -43,6 +43,16 @@ test:
 format:
 	docker compose exec app black app tests
 
+# Dashboard commands  
+dashboard:
+	@echo "🚀 Starting dashboard..."
+	@echo "📊 Dashboard will be available at: http://localhost:8501"
+	@echo "🎵 Make sure API is running first with: make setup"
+	docker compose up dashboard --build -d
+
+dashboard-logs:
+	docker compose logs -f dashboard
+
 # Legacy aliases (will be removed)
 docker-up: up
 docker-down: down

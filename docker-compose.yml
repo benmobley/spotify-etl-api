@@ -29,5 +29,17 @@ services:
       - .:/app  # Mount source code for development
     command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
 
+  dashboard:
+    build: .
+    depends_on:
+      - app
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app  # Mount source code for development
+    command: streamlit run dashboard.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+
 volumes:
   pgdata:
