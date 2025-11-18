@@ -127,11 +127,13 @@ curl http://localhost:8000/api/stats/top-artists
 **Dashboard URL:** http://localhost:8501
 
 ### 🎯 Key Features:
+
 - **📊 Analytics Tab:** Dataset overview, top artists chart, key metrics
 - **🎵 Track Explorer:** Advanced filtering with interactive scatter plots
 - **📈 Statistics Tab:** Distribution charts and statistical analysis
 
 ### 🔍 Interactive Filters:
+
 - **Search:** Find tracks by name, artist, or album
 - **Artist Filter:** Focus on specific artists
 - **Danceability Slider:** Filter by danceability score (0-1)
@@ -139,12 +141,14 @@ curl http://localhost:8000/api/stats/top-artists
 - **Sorting:** Sort by danceability, tempo, or track name
 
 ### 📊 Visualizations:
+
 - **Top Artists Bar Chart:** Most prolific artists by track count
 - **Danceability vs Tempo Scatter Plot:** Interactive track exploration
 - **Distribution Histograms:** Data distribution analysis
 - **Real-time Metrics:** Live statistics from the API
 
 ### ⚡ Dashboard Commands:
+
 ```bash
 make dashboard       # Start dashboard service
 make dashboard-logs  # View dashboard logs
