@@ -145,6 +145,13 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
     if dropped:
         logger.info(f"Dropped {dropped} rows with missing track_name/artist")
 
+    # Remove duplicates based on unique constraint columns
+    before_dedup = len(out)
+    out = out.drop_duplicates(subset=['track_name', 'artist', 'album'], keep='first')
+    dedup_dropped = before_dedup - len(out)
+    if dedup_dropped:
+        logger.info(f"Dropped {dedup_dropped} duplicate records based on (track_name, artist, album)")
+
     return out
 
 

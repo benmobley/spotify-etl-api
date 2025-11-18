@@ -5,7 +5,7 @@ test:
 	pytest -q
 
 load-sample:
-	python -m app.etl.load_csv data/raw/spotify_sample.csv
+	python -m app.etl.load_csv data/raw/spotify_kaggle.csv
 
 docker-up:
 	docker compose up --build -d
