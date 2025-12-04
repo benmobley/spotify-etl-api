@@ -13,6 +13,10 @@ fi
 echo "🐳 Starting services with Docker Compose..."
 make setup
 
+# Load sample data
+echo "📊 Loading sample data (89K tracks)..."
+make load-sample
+
 # Wait for API to be ready
 echo "⏳ Waiting for API to be ready..."
 MAX_ATTEMPTS=30
