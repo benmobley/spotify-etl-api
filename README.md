@@ -28,11 +28,11 @@ make load-custom CSV_FILE=data/your-file.csv
 
 ## 🧭 API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/tracks` | Search, filter, paginate tracks |
-| `GET /api/stats/summary` | Dataset statistics |
-| `GET /api/stats/top-artists` | Top artists by track count |
+| Endpoint                     | Description                     |
+| ---------------------------- | ------------------------------- |
+| `GET /api/tracks`            | Search, filter, paginate tracks |
+| `GET /api/stats/summary`     | Dataset statistics              |
+| `GET /api/stats/top-artists` | Top artists by track count      |
 
 **Filters:** `q` (search), `artist`, `min_danceability`, `tempo_min/max`, `sort`, `order`
 
@@ -41,8 +41,9 @@ make load-custom CSV_FILE=data/your-file.csv
 ## 📈 Dashboard
 
 Interactive Streamlit dashboard with:
+
 - 📊 Analytics: Top artists charts, key metrics
-- 🎵 Track Explorer: Search, filters, scatter plots  
+- 🎵 Track Explorer: Search, filters, scatter plots
 - 📈 Statistics: Distribution analysis
 
 **Start:** `make dashboard` | **URL:** http://localhost:8501
@@ -51,7 +52,7 @@ Interactive Streamlit dashboard with:
 
 ```bash
 make setup           # Start all services + load data
-make dashboard       # Launch dashboard  
+make dashboard       # Launch dashboard
 make test            # Run tests
 make down            # Stop everything
 ```
