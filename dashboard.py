@@ -101,8 +101,8 @@ def main():
     summary_data = fetch_api_data("/api/stats/summary")
     if summary_data:
         st.sidebar.metric("Total Tracks", f"{summary_data['total_tracks']:,}")
-        st.sidebar.metric("Avg Danceability", f"{summary_data['avg_danceability']:.3f}")
-        st.sidebar.metric("Avg Tempo", f"{summary_data['avg_tempo']:.1f} BPM")
+        st.sidebar.metric("Avg Energy", f"{summary_data.get('avg_energy', 0):.3f}")
+        st.sidebar.metric("Avg Popularity", f"{summary_data.get('avg_popularity', 0):.1f}")
     
     st.sidebar.markdown("---")
     
@@ -164,26 +164,20 @@ def show_analytics_tab(summary_data):
         st.error("Unable to load summary data")
         return
     
-    # Display key metrics
-    col1, col2, col3 = st.columns(3)
+    # Display key metrics in rows
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric(
-            "Total Tracks", 
-            f"{summary_data['total_tracks']:,}",
-            help="Total number of tracks in the database"
-        )
+        st.metric("Total Tracks", f"{summary_data['total_tracks']:,}")
+        st.metric("Avg Energy", f"{summary_data.get('avg_energy', 0):.3f}")
     with col2:
-        st.metric(
-            "Average Danceability", 
-            f"{summary_data['avg_danceability']:.3f}",
-            help="Average danceability score (0-1 scale)"
-        )
+        st.metric("Avg Danceability", f"{summary_data.get('avg_danceability', 0):.3f}")
+        st.metric("Avg Valence", f"{summary_data.get('avg_valence', 0):.3f}")
     with col3:
-        st.metric(
-            "Average Tempo", 
-            f"{summary_data['avg_tempo']:.1f} BPM",
-            help="Average tempo in beats per minute"
-        )
+        st.metric("Avg Tempo", f"{summary_data.get('avg_tempo', 0):.1f} BPM")
+        st.metric("Avg Loudness", f"{summary_data.get('avg_loudness', 0):.1f} dB")
+    with col4:
+        st.metric("Avg Popularity", f"{summary_data.get('avg_popularity', 0):.1f}")
+        st.metric("Avg Duration", f"{summary_data.get('avg_duration_ms', 0)/1000:.1f}s")
     
     # Top Artists Chart
     st.subheader("🎤 Top Artists by Track Count")
@@ -251,49 +245,60 @@ def show_track_explorer_tab(search_query, artist_filter, min_danceability, tempo
     if tracks_data["items"]:
         df_tracks = pd.DataFrame(tracks_data["items"])
         
-        # Scatter plot of Danceability vs Tempo
-        st.subheader("💃 Danceability vs Tempo Analysis")
-        fig_scatter = px.scatter(
-            df_tracks,
-            x="tempo",
-            y="danceability",
-            hover_data=["track_name", "artist"],
-            title="Track Distribution: Danceability vs Tempo",
-            labels={"tempo": "Tempo (BPM)", "danceability": "Danceability"},
-            color="danceability",
-            color_continuous_scale="viridis"
-        )
-        fig_scatter.update_layout(height=500)
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        # Interactive scatter plots with multiple feature combinations
+        st.subheader("🎨 Audio Features Analysis")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            x_axis = st.selectbox("X-Axis Feature", 
+                ["tempo", "energy", "loudness", "valence", "acousticness", "popularity"], 
+                index=0)
+        with col2:
+            y_axis = st.selectbox("Y-Axis Feature", 
+                ["danceability", "energy", "valence", "popularity", "loudness"], 
+                index=0)
+        
+        # Create scatter plot with selected features
+        if x_axis in df_tracks.columns and y_axis in df_tracks.columns:
+            fig_scatter = px.scatter(
+                df_tracks,
+                x=x_axis,
+                y=y_axis,
+                hover_data=["track_name", "artist", "popularity", "energy"],
+                title=f"Track Distribution: {y_axis.title()} vs {x_axis.title()}",
+                labels={x_axis: x_axis.replace("_", " ").title(), 
+                       y_axis: y_axis.replace("_", " ").title()},
+                color=y_axis,
+                color_continuous_scale="viridis",
+                size="popularity" if "popularity" in df_tracks.columns else None
+            )
+            fig_scatter.update_layout(height=500)
+            st.plotly_chart(fig_scatter, use_container_width=True)
         
         # Tracks table
         st.subheader("📋 Track Details")
         
         # Format the dataframe for better display
         display_df = df_tracks.copy()
-        if "danceability" in display_df.columns:
-            display_df["danceability"] = display_df["danceability"].round(3)
-        if "tempo" in display_df.columns:
-            display_df["tempo"] = display_df["tempo"].round(1)
+        
+        # Select columns to display (include new features if available)
+        display_cols = ["track_name", "artist", "album"]
+        feature_cols = ["popularity", "energy", "danceability", "valence", "tempo", "loudness"]
+        display_cols.extend([col for col in feature_cols if col in display_df.columns])
+        
+        # Round numeric columns
+        for col in display_df.columns:
+            if col in ["danceability", "energy", "valence", "acousticness", "instrumentalness", "speechiness", "liveness"]:
+                if col in display_df.columns:
+                    display_df[col] = display_df[col].round(3)
+            elif col in ["tempo", "loudness", "popularity"]:
+                if col in display_df.columns:
+                    display_df[col] = display_df[col].round(1)
         
         st.dataframe(
-            display_df[["track_name", "artist", "album", "danceability", "tempo"]],
+            display_df[display_cols],
             use_container_width=True,
-            column_config={
-                "track_name": "Track Name",
-                "artist": "Artist",
-                "album": "Album",
-                "danceability": st.column_config.NumberColumn(
-                    "Danceability",
-                    help="Danceability score (0-1)",
-                    format="%.3f"
-                ),
-                "tempo": st.column_config.NumberColumn(
-                    "Tempo",
-                    help="Tempo in BPM",
-                    format="%.1f"
-                )
-            }
+            height=400
         )
         
         # Pagination info
@@ -316,38 +321,58 @@ def show_statistics_tab():
     
     df_sample = pd.DataFrame(sample_data["items"])
     
-    # Distribution charts
-    col1, col2 = st.columns(2)
+    # Distribution charts for all audio features
+    st.subheader("📊 Audio Feature Distributions")
     
-    with col1:
-        st.subheader("💃 Danceability Distribution")
-        fig_dance = px.histogram(
-            df_sample,
-            x="danceability",
-            nbins=20,
-            title="Distribution of Danceability Scores",
-            labels={"danceability": "Danceability", "count": "Number of Tracks"}
-        )
-        fig_dance.update_layout(height=400)
-        st.plotly_chart(fig_dance, use_container_width=True)
+    feature_to_plot = st.selectbox(
+        "Select feature to visualize",
+        ["energy", "danceability", "valence", "tempo", "loudness", "acousticness", 
+         "instrumentalness", "speechiness", "popularity"]
+    )
     
-    with col2:
-        st.subheader("🎵 Tempo Distribution")
-        fig_tempo = px.histogram(
-            df_sample,
-            x="tempo",
-            nbins=20,
-            title="Distribution of Tempo (BPM)",
-            labels={"tempo": "Tempo (BPM)", "count": "Number of Tracks"}
-        )
-        fig_tempo.update_layout(height=400)
-        st.plotly_chart(fig_tempo, use_container_width=True)
+    if feature_to_plot in df_sample.columns:
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            fig = px.histogram(
+                df_sample,
+                x=feature_to_plot,
+                nbins=30,
+                title=f"Distribution of {feature_to_plot.replace('_', ' ').title()}",
+                labels={feature_to_plot: feature_to_plot.replace('_', ' ').title()}
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Show statistics for selected feature
+            st.markdown(f"**{feature_to_plot.replace('_', ' ').title()} Stats:**")
+            st.metric("Mean", f"{df_sample[feature_to_plot].mean():.3f}")
+            st.metric("Median", f"{df_sample[feature_to_plot].median():.3f}")
+            st.metric("Std Dev", f"{df_sample[feature_to_plot].std():.3f}")
+            st.metric("Min", f"{df_sample[feature_to_plot].min():.3f}")
+            st.metric("Max", f"{df_sample[feature_to_plot].max():.3f}")
     
-    # Summary statistics
-    st.subheader("📊 Sample Statistics Summary")
-    
-    numeric_cols = ["danceability", "tempo"]
+    # Correlation heatmap
+    st.subheader("🔥 Feature Correlation Heatmap")
+    numeric_cols = ["energy", "danceability", "valence", "tempo", "loudness", 
+                    "acousticness", "speechiness", "popularity"]
     available_cols = [col for col in numeric_cols if col in df_sample.columns and df_sample[col].notna().any()]
+    
+    if len(available_cols) > 1:
+        corr_matrix = df_sample[available_cols].corr()
+        fig_heatmap = px.imshow(
+            corr_matrix,
+            title="Correlation Matrix of Audio Features",
+            color_continuous_scale="RdBu",
+            aspect="auto",
+            text_auto=".2f"
+        )
+        fig_heatmap.update_layout(height=500)
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+    
+    # Summary statistics table
+    st.subheader("📊 Complete Statistics Summary")
     
     if available_cols:
         stats_df = df_sample[available_cols].describe()

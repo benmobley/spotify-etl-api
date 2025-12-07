@@ -110,10 +110,22 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
                 "track_name": df[cols.get("track_name")],
                 "artist": df[cols.get("artists")],
                 "album": df[cols.get("album_name")],
-                "danceability": pd.to_numeric(
-                    df[cols.get("danceability")], errors="coerce"
-                ),
+                "popularity": pd.to_numeric(df[cols.get("popularity")], errors="coerce"),
+                "duration_ms": pd.to_numeric(df[cols.get("duration_ms")], errors="coerce"),
+                "explicit": df[cols.get("explicit")].astype(bool) if "explicit" in cols else False,
+                "danceability": pd.to_numeric(df[cols.get("danceability")], errors="coerce"),
+                "energy": pd.to_numeric(df[cols.get("energy")], errors="coerce"),
+                "key": pd.to_numeric(df[cols.get("key")], errors="coerce"),
+                "loudness": pd.to_numeric(df[cols.get("loudness")], errors="coerce"),
+                "mode": pd.to_numeric(df[cols.get("mode")], errors="coerce"),
+                "speechiness": pd.to_numeric(df[cols.get("speechiness")], errors="coerce"),
+                "acousticness": pd.to_numeric(df[cols.get("acousticness")], errors="coerce"),
+                "instrumentalness": pd.to_numeric(df[cols.get("instrumentalness")], errors="coerce"),
+                "liveness": pd.to_numeric(df[cols.get("liveness")], errors="coerce"),
+                "valence": pd.to_numeric(df[cols.get("valence")], errors="coerce"),
                 "tempo": pd.to_numeric(df[cols.get("tempo")], errors="coerce"),
+                "time_signature": pd.to_numeric(df[cols.get("time_signature")], errors="coerce"),
+                "track_genre": df[cols.get("track_genre")].astype(str) if "track_genre" in cols else None,
             }
         )
         

@@ -10,8 +10,22 @@ def _track_to_dict(t: Track) -> Dict:
         "track_name": t.track_name,
         "artist": t.artist,
         "album": t.album,
+        "popularity": t.popularity,
+        "duration_ms": t.duration_ms,
+        "explicit": t.explicit,
         "danceability": t.danceability,
+        "energy": t.energy,
+        "key": t.key,
+        "loudness": t.loudness,
+        "mode": t.mode,
+        "speechiness": t.speechiness,
+        "acousticness": t.acousticness,
+        "instrumentalness": t.instrumentalness,
+        "liveness": t.liveness,
+        "valence": t.valence,
         "tempo": t.tempo,
+        "time_signature": t.time_signature,
+        "track_genre": t.track_genre,
     }
 
 
@@ -82,9 +96,27 @@ def get_summary() -> Dict:
     with SessionLocal() as s:
         total = s.scalar(select(func.count(Track.id)))
         avg_dance = s.scalar(select(func.avg(Track.danceability)))
+        avg_energy = s.scalar(select(func.avg(Track.energy)))
+        avg_valence = s.scalar(select(func.avg(Track.valence)))
         avg_tempo = s.scalar(select(func.avg(Track.tempo)))
+        avg_loudness = s.scalar(select(func.avg(Track.loudness)))
+        avg_acousticness = s.scalar(select(func.avg(Track.acousticness)))
+        avg_instrumentalness = s.scalar(select(func.avg(Track.instrumentalness)))
+        avg_speechiness = s.scalar(select(func.avg(Track.speechiness)))
+        avg_liveness = s.scalar(select(func.avg(Track.liveness)))
+        avg_popularity = s.scalar(select(func.avg(Track.popularity)))
+        avg_duration = s.scalar(select(func.avg(Track.duration_ms)))
         return {
             "total_tracks": int(total or 0),
             "avg_danceability": float(avg_dance or 0.0),
+            "avg_energy": float(avg_energy or 0.0),
+            "avg_valence": float(avg_valence or 0.0),
             "avg_tempo": float(avg_tempo or 0.0),
+            "avg_loudness": float(avg_loudness or 0.0),
+            "avg_acousticness": float(avg_acousticness or 0.0),
+            "avg_instrumentalness": float(avg_instrumentalness or 0.0),
+            "avg_speechiness": float(avg_speechiness or 0.0),
+            "avg_liveness": float(avg_liveness or 0.0),
+            "avg_popularity": float(avg_popularity or 0.0),
+            "avg_duration_ms": float(avg_duration or 0.0),
         }
