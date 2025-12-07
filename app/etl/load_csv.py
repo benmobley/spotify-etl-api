@@ -112,7 +112,7 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
                 "album": df[cols.get("album_name")],
                 "popularity": pd.to_numeric(df[cols.get("popularity")], errors="coerce"),
                 "duration_ms": pd.to_numeric(df[cols.get("duration_ms")], errors="coerce"),
-                "explicit": df[cols.get("explicit")].astype(bool) if "explicit" in cols else False,
+                "explicit": df[cols.get("explicit")].map(lambda x: bool(x) if pd.notna(x) else False) if "explicit" in cols else False,
                 "danceability": pd.to_numeric(df[cols.get("danceability")], errors="coerce"),
                 "energy": pd.to_numeric(df[cols.get("energy")], errors="coerce"),
                 "key": pd.to_numeric(df[cols.get("key")], errors="coerce"),
