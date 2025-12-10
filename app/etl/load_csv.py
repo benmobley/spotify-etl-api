@@ -186,7 +186,7 @@ def load_csv(path: str, replace: bool = False) -> None:
 
         # Process data
         df = _normalize(_read_csv(path))
-        step = 500
+        step = 100  # Reduced batch size to avoid SQLAlchemy parameter limit
         total = len(df)
         
         if total == 0:

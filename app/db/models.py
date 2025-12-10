@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, Float, String, Boolean
+from sqlalchemy import Column, Integer, Float, String, Boolean, UniqueConstraint
 from .session import Base
 
 
 class Track(Base):
     __tablename__ = "tracks"
+    __table_args__ = (UniqueConstraint('track_name', 'artist', 'album', name='tracks_unique_constraint'),)
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
     track_name = Column(String, nullable=False)
     artist = Column(String, nullable=False)
