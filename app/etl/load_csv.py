@@ -237,20 +237,25 @@ def _upsert_chunk(conn, df_chunk: pd.DataFrame) -> None:
             logger.warning("No records to upsert in chunk")
             return
 
-        stmt = insert(table).values(records)
+        BATCH_SIZE = 25
 
-        update_cols = {
-            c.name: getattr(stmt.excluded, c.name)
-            for c in table.c
-            if c.name != "id"
-        }
+        for i in range(0, len(records), BATCH_SIZE):
+            batch = records[i:i + BATCH_SIZE]
 
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["track_name", "artist", "album"],
-            set_=update_cols,
-        )
+            stmt = insert(table).values(batch)
 
-        conn.execute(stmt)
+            update_cols = {
+                c.name: getattr(stmt.excluded, c.name)
+                for c in table.c
+                if c.name != "id"
+            }
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["track_name", "artist", "album"],
+                set_=update_cols,
+            )
+
+            conn.execute(stmt)
         
     except IntegrityError as e:
         raise DatabaseError(f"Data integrity violation during upsert: {e}")
