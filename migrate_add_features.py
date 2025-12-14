@@ -14,6 +14,7 @@ def migrate():
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS popularity INTEGER;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS duration_ms INTEGER;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS explicit BOOLEAN;",
+        "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS danceability FLOAT;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS energy FLOAT;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS key INTEGER;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS loudness FLOAT;",
@@ -23,6 +24,7 @@ def migrate():
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS instrumentalness FLOAT;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS liveness FLOAT;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS valence FLOAT;",
+        "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS tempo FLOAT;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS time_signature INTEGER;",
         "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_genre VARCHAR;",
     ]
